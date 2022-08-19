@@ -20,30 +20,11 @@ public class WowsPrService {
 
     }
 
-
-    public static int pr(GameDataInfo info, NumberShipAvgData data) {
-        AvgData avgData = new AvgData(info, data);
-        if (checkNull(avgData)) {
-            return 0;
-        }
-        return pr(info, avgData);
-    }
-
-    public static int pr(GameDataInfo info, AvgData data) {
-        if (checkNull(data)) {
-            return 0;
-        }
-        return pr(info.getDamage(), info.getFrags(), info.getWins(), data);
-    }
-
-    public static int pr(long damage, long frags, long wins, AvgData data) {
-        double nd = damage / data.damage();
-        double nf = frags / data.frags();
-        double nw = wins / data.wins();
-        double maxNd = Math.max(0, (nd - 0.4) / (1 - 0.4));
-        double maxNf = Math.max(0, (nf - 0.1) / (1 - 0.1));
-        double maxNw = Math.max(0, (nw - 0.7) / (1 - 0.7));
-        return result(maxNd, maxNf, maxNw);
+    public static int pr(GameInfoPrAvgData data) {
+        double nd = data.getDataInfo().getDamage() / data.avgDamage();
+        double nf = data.getDataInfo().getFrags() / data.avgFrags();
+        double nw = data.getDataInfo().getWins() / data.avgWins();
+        return result(nd, nf, nw);
     }
 
     public static int number(double data) {
@@ -99,7 +80,7 @@ public class WowsPrService {
      */
     public static double xp(long battles, double xp) {
         if (xp <= 0 || battles <= 0) {
-            return -1;
+            return 0;
         }
         return doubleCheck(xp / battles);
     }
@@ -138,7 +119,7 @@ public class WowsPrService {
     }
 
     /**
-     * 四舍五入 zero小数点
+     * 抹0
      *
      * @param data 数据
      * @return 四舍五入 zero小数点
@@ -179,16 +160,6 @@ public class WowsPrService {
      * @param data 数据
      * @return 结果
      */
-    public static boolean checkNull(AvgData data) {
-        return data == null || data.getWinRate() <= 0 || data.getAverageDamageDealt() <= 0 || data.getAverageFrags() <= 0;
-    }
-
-    /**
-     * 检测是否为空
-     *
-     * @param data 数据
-     * @return 结果
-     */
     public static boolean checkNull(NumberShipAvgData data) {
         return data == null || data.getWinRate() <= 0 || data.getAverageDamageDealt() <= 0 || data.getAverageFrags() <= 0;
     }
@@ -196,86 +167,15 @@ public class WowsPrService {
     /**
      * 计算结果
      *
-     * @param nDamage 场均
-     * @param nFrags  平均击杀
-     * @param ngWins  胜率
+     * @param nd 场均
+     * @param nf 平均击杀
+     * @param nw 胜率
      * @return 结果
      */
-    private static int result(double nDamage, double nFrags, double ngWins) {
-        return (int) Math.floor(700 * nDamage + 300 * nFrags + 150 * ngWins);
-    }
-
-    @Getter
-    public static class AvgData {
-        private Long userBattle;
-        private long shipId;
-        /**
-         * 胜率
-         */
-        private double winRate;
-        /**
-         * 场均伤害
-         */
-        private double averageDamageDealt;
-        /**
-         * 场均击杀
-         */
-        private double averageFrags;
-
-        public AvgData() {
-        }
-
-        public AvgData(GameDataInfo dataInfo, NumberShipAvgData data) {
-            this.userBattle = dataInfo.getBattles();
-            this.shipId = dataInfo.getShipId();
-            this.winRate = data.getWinRate();
-            this.averageDamageDealt = data.getAverageDamageDealt();
-            this.averageFrags = data.getAverageFrags();
-        }
-
-        public AvgData(long battles, NumberShipAvgData data) {
-            this.userBattle = battles;
-            this.shipId = 0;
-            this.winRate = data.getWinRate();
-            this.averageDamageDealt = data.getAverageDamageDealt();
-            this.averageFrags = data.getAverageFrags();
-        }
-
-        public AvgData(long shipId, long userBattle, double winRate, double averageDamageDealt, double averageFrags) {
-            this.userBattle = userBattle;
-            this.shipId = shipId;
-            this.winRate = winRate;
-            this.averageDamageDealt = averageDamageDealt;
-            this.averageFrags = averageFrags;
-        }
-
-        public AvgData(double winRate, double averageDamageDealt, double averageFrags) {
-            this.winRate = winRate;
-            this.averageDamageDealt = averageDamageDealt;
-            this.averageFrags = averageFrags;
-        }
-
-        public void prAdd(long battle, NumberShipAvgData avgData) {
-            AvgData data = new AvgData(battle, avgData);
-            this.winRate += data.wins();
-            this.averageDamageDealt += data.damage();
-            this.averageFrags += data.frags();
-        }
-
-        public double damage() {
-            return userBattle == null ? averageDamageDealt : userBattle * averageDamageDealt;
-        }
-
-        public double frags() {
-            return userBattle == null ? averageFrags : userBattle * averageFrags;
-        }
-
-        public double wins() {
-            return userBattle == null ? winRate : userBattle * winRate / 100;
-        }
-
-        public long getShipId() {
-            return shipId;
-        }
+    private static int result(double nd, double nf, double nw) {
+        double maxNd = Math.max(0, (nd - 0.4) / (1 - 0.4));
+        double maxNf = Math.max(0, (nf - 0.1) / (1 - 0.1));
+        double maxNw = Math.max(0, (nw - 0.7) / (1 - 0.7));
+        return (int) Math.floor(700 * maxNd + 300 * maxNf + 150 * maxNw);
     }
 }
